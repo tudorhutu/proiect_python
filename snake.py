@@ -1,8 +1,16 @@
 import pygame
 import random
 pygame.init()
+bigfont = pygame.font.Font(None, 80)
+smallfont = pygame.font.Font(None, 45)
+SCREEN_WIDTH=1080
+SCREEN_HEIGHT=720
+list_of_scores=[]
+scorelist = pygame.sprite.Group()
+screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 
 def all_of_it():
+    global list_of_scores
     BLACK = (0, 0, 0)
     WHITE = (255, 255, 255)
     GREEN = (0, 255, 0)
@@ -109,8 +117,36 @@ def all_of_it():
 
         #collision and game over
         blocks_hit_list = pygame.sprite.spritecollide(segment, allspriteslist, True)
-        if(blocks_hit_list): 
-            all_of_it()
+        if(blocks_hit_list):
+            screen.fill(BLACK)
+            x_change = 0
+            y_change = 0
+            unclicked=True
+            rect1 = pygame.Rect(SCREEN_WIDTH/2-100, SCREEN_HEIGHT/2, 0, 0).inflate(100, 100)
+            rect2 = pygame.Rect(SCREEN_WIDTH/2+100, SCREEN_HEIGHT/2, 0, 0).inflate(100, 100)
+            while unclicked:
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        unclicked = False
+                point = pygame.mouse.get_pos()
+                collide1 = rect1.collidepoint(point)
+                collide2 = rect2.collidepoint(point)
+                if collide1:
+                    color1 = (0, 255, 0)
+                    if event.type == pygame.MOUSEBUTTONUP:all_of_it()
+                if collide2:
+                    color2 = (255, 0, 0)
+                    if event.type == pygame.MOUSEBUTTONUP:
+                        unclicked = False
+                        done = True
+                else:
+                    color1 = (255, 255, 255)
+                    color2 = (255, 255, 255)
+                pygame.draw.rect(screen, color1, rect1)
+                pygame.display.flip()
+                pygame.draw.rect(screen, color2, rect2)
+                pygame.display.flip()
+            
             
 
 
