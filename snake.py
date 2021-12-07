@@ -47,7 +47,6 @@ def parse_command():
     parser = argparse.ArgumentParser()
     #parser.add_argument('file', type=argparse.FileType('r'))
     args = parser.parse_args()
-    print(args)
     with open('table.json') as f:
         d = json.load(f)
         SCREEN_WIDTH =20* int(d['rows'])
@@ -96,7 +95,7 @@ def all_of_it():
         allspriteslist.add(segment)
 
     #initialising the points
-    point = Point(100,100)
+    point = Point(20,20)
     pointgroup.add(point)
     
     clock = pygame.time.Clock()
@@ -133,8 +132,13 @@ def all_of_it():
             allspriteslist.remove(old_segment)
         else: 
             pointgroup.remove(point)
-            #random.randrange(start, stop[, step])
             point = Point(random.randrange(0, SCREEN_WIDTH,20),random.randrange(0, SCREEN_HEIGHT,20))
+            point_hit_list = pygame.sprite.spritecollide(point, obstacles, True)
+            if(point_hit_list):
+                while (point_hit_list):
+                    point = Point(random.randrange(0, SCREEN_WIDTH,20),random.randrange(0, SCREEN_HEIGHT,20))
+                    point_hit_list = pygame.sprite.spritecollide(point, obstacles, True)
+            print(point_hit_list)
             pointgroup.add(point)
 
         x = snake_segments[0].rect.x + x_change
