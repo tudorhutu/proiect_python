@@ -60,11 +60,6 @@ def parse_command():
     
 
 def all_of_it():
-    for i in range(game_matrix_rows):
-        for j in range(game_matrix_cols):
-            if obstacle_matrix[j][i]== 1:
-                obstacle = Segment(i*20,j*20)
-                obstacles.add(obstacle)
     font = pygame.font.SysFont('Arial', 25)
     global list_of_scores
     BLACK = (0, 0, 0)
@@ -103,7 +98,12 @@ def all_of_it():
 
 
     while not done:
-        point_acquired = False
+        for i in range(game_matrix_rows):
+            for j in range(game_matrix_cols):
+                if obstacle_matrix[j][i]== 1:
+                    obstacle = Segment(i*20,j*20)
+                    obstacles.add(obstacle)
+            point_acquired = False
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
