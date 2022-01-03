@@ -10,6 +10,7 @@ SCREEN_HEIGHT=1000
 list_of_scores=[]
 obstacles = pygame.sprite.Group()
 scorelist = pygame.sprite.Group()
+allspriteslist = pygame.sprite.Group()
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 segment_width = 18
 segment_height = 18
@@ -18,6 +19,7 @@ GREEN = (0, 255, 0)
 game_matrix_rows=0
 game_matrix_cols=0
 obstacle_matrix=[],[]
+snake_segments=[]
 
 class Segment(pygame.sprite.Sprite):
     def __init__(self, x, y):
@@ -40,6 +42,18 @@ class Point(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.x = x
         self.rect.y = y
+#---------------
+font = pygame.font.SysFont('Arial', 25)
+BLACK = (0, 0, 0)
+SNAKE_LENGTH=3
+# Set the width and height of each snake segment and point
+segment_width = 18
+segment_height = 18
+# Margin between each segment
+segment_margin = 2
+# Set initial speed
+x_change = segment_width + segment_margin
+y_change = 0
 
 def parse_command():
     global SCREEN_WIDTH,SCREEN_HEIGHT,game_matrix_rows,game_matrix_cols,obstacle_matrix
@@ -55,32 +69,14 @@ def parse_command():
     game_matrix_cols = int(d['cols'])
     obstacle_matrix = d['game_state']
 
-
-
-    
-
-def all_of_it():
-    font = pygame.font.SysFont('Arial', 25)
-    global list_of_scores
-    BLACK = (0, 0, 0)
-    SNAKE_LENGTH=3
-    # Set the width and height of each snake segment and point
-    segment_width = 18
-    segment_height = 18
-    # Margin between each segment
-    segment_margin = 2
-    
-    # Set initial speed
+#when the game loops we need to reset the x_change and the y_change values
+def initialise_for_loop():
+    global x_change,y_change
     x_change = segment_width + segment_margin
     y_change = 0
-    
-    #initialising the screen
-    screen = pygame.display.set_mode([SCREEN_WIDTH, SCREEN_HEIGHT])
-    pygame.display.set_caption('Snake')
-    allspriteslist = pygame.sprite.Group()
-    pointgroup = pygame.sprite.Group()
-    
-    #initialising the snake
+
+def initialise_snake():
+    global allspriteslist,snake_segments
     snake_segments = []
     for i in range(SNAKE_LENGTH):
         x = 20
@@ -89,97 +85,39 @@ def all_of_it():
         snake_segments.append(segment)
         allspriteslist.add(segment)
 
-    #initialising the points
-    point = Point(20,20)
-    pointgroup.add(point)
-    
-    clock = pygame.time.Clock()
-    done = False
-
-
-    while not done:
-        for i in range(game_matrix_rows):
-            for j in range(game_matrix_cols):
-                if obstacle_matrix[j][i]== 1:
-                    obstacle = Segment(i*20,j*20)
-                    obstacles.add(obstacle)
-            point_acquired = False
-
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                done = True
-
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_LEFT:
-                    x_change = (segment_width + segment_margin) * -1
-                    y_change = 0
-                if event.key == pygame.K_RIGHT:
-                    x_change = (segment_width + segment_margin)
-                    y_change = 0
-                if event.key == pygame.K_UP:
-                    x_change = 0
-                    y_change = (segment_height + segment_margin) * -1
-                if event.key == pygame.K_DOWN:
-                    x_change = 0
-                    y_change = (segment_height + segment_margin)
-
-        point_hit_list = pygame.sprite.spritecollide(segment, pointgroup, False)
-        if(point_hit_list): point_acquired=True
-
-        #"animation" and screenwrap
-        if not point_acquired:
+def game_over():
+        screen.fill(BLACK)
+        #highscore display on game over screen
+        y_score=50+100
+        list_of_scores.append(len(snake_segments)+1)
+        screen.blit(font.render('High scores', True, (255,255,255)), (SCREEN_WIDTH/2-60, y_score))
+        y_score+=25
+        list_of_scores.sort(reverse=True)
+        #the number of displayed scores is dependent on the screen resolution
+        score_display_max=SCREEN_HEIGHT/2
+        score_count=0
+        for score in list_of_scores:
+            score_count+=25
+            if(score_count>score_display_max): break
+            screen.blit(font.render(str(score), True, (255,255,255)), (SCREEN_WIDTH/2, y_score))
+            pygame.display.flip()
+            y_score+=25
+        #removing the "dead" snake
+        for i in range(len(snake_segments)):
             old_segment = snake_segments.pop()
             allspriteslist.remove(old_segment)
-        else: 
-            pointgroup.remove(point)
-            point = Point(random.randrange(0, SCREEN_WIDTH,20),random.randrange(0, SCREEN_HEIGHT,20))
-            point_hit_list = pygame.sprite.spritecollide(point, obstacles, True)
-            if(point_hit_list):
-                while (point_hit_list):
-                    point = Point(random.randrange(0, SCREEN_WIDTH,20),random.randrange(0, SCREEN_HEIGHT,20))
-                    point_hit_list = pygame.sprite.spritecollide(point, obstacles, True)
-            print(point_hit_list)
-            pointgroup.add(point)
-
-        x = snake_segments[0].rect.x + x_change
-        x=x%SCREEN_WIDTH
-        y = snake_segments[0].rect.y + y_change
-        y=y%SCREEN_HEIGHT
-        segment = Segment(x, y)
-
-        #collision and game over
-        blocks_hit_list = pygame.sprite.spritecollide(segment, allspriteslist, True)
-        blocks_hit_list1 =  pygame.sprite.spritecollide(segment, obstacles, True)
-        if(blocks_hit_list or blocks_hit_list1):
-            screen.fill(BLACK)
-            y_score=50+100
-            
-            list_of_scores.append(len(snake_segments)+1)
-            screen.blit(font.render('High scores', True, (255,255,255)), (SCREEN_WIDTH/2-60, y_score))
-            y_score+=25
-            list_of_scores.sort(reverse=True)
-            score_display_max=SCREEN_HEIGHT/2
-            score_count=0
-            for score in list_of_scores:
-                score_count+=25
-                if(score_count>score_display_max): break
-                screen.blit(font.render(str(score), True, (255,255,255)), (SCREEN_WIDTH/2, y_score))
-                pygame.display.flip()
-                y_score+=25
-
-            
-           
-            color1 = (255, 255, 255)
-            color2 = (255, 255, 255)
-            x_change = 0
-            y_change = 0
-            unclicked=True
-            rect1 = pygame.Rect(SCREEN_WIDTH/2-100, 50, 0, 0).inflate(100, 50)
-            rect2 = pygame.Rect(SCREEN_WIDTH/2+100, 50, 0, 0).inflate(100, 50)
-            while unclicked:
-                for event in pygame.event.get():
-                    if event.type == pygame.QUIT:
-                        unclicked = True
+        #game over and contiune buttons
+        color1 = (255, 255, 255)
+        color2 = (255, 255, 255)
+        x_change = 0
+        y_change = 0
+        unclicked=True
+        rect1 = pygame.Rect(SCREEN_WIDTH/2-100, 50, 0, 0).inflate(100, 50)
+        rect2 = pygame.Rect(SCREEN_WIDTH/2+100, 50, 0, 0).inflate(100, 50)
+        while unclicked:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    unclicked = True
                 point = pygame.mouse.get_pos()
                 collide1 = rect1.collidepoint(point)
                 collide2 = rect2.collidepoint(point)
@@ -187,7 +125,8 @@ def all_of_it():
                     color1 = (0, 255, 0)
                     if event.type == pygame.MOUSEBUTTONUP:
                         unclicked = False
-                        all_of_it()
+                        #max number of recursions is 1000
+                        game_loop()
                 elif collide2:
                     color2 = (255, 0, 0)
                     if event.type == pygame.MOUSEBUTTONUP:
@@ -202,6 +141,85 @@ def all_of_it():
                 screen.blit(font.render('Reset', True, (0,0,0)), (SCREEN_WIDTH/2-133, 35))
                 screen.blit(font.render('Quit', True, (0,0,0)), (SCREEN_WIDTH/2+80, 35))
                 pygame.display.flip()
+
+def game_loop():
+    screen = pygame.display.set_mode([SCREEN_WIDTH, SCREEN_HEIGHT])
+    pygame.display.set_caption('Snake')
+    global allspriteslist,snake_segments,x_change,y_change,list_of_scores
+    pointgroup = pygame.sprite.Group()
+    
+    initialise_for_loop()
+    #initialising the screen
+    
+
+    initialise_snake()
+    segment=snake_segments[len(snake_segments)-1]
+    #initialising the points
+    point = Point(20,20)
+    pointgroup.add(point)
+    
+    clock = pygame.time.Clock()
+    done = False
+
+
+    while not done:
+        #before moving the snake we add all the obstacles
+        for i in range(game_matrix_rows):
+            for j in range(game_matrix_cols):
+                if obstacle_matrix[j][i]== 1:
+                    obstacle = Segment(i*20,j*20)
+                    obstacles.add(obstacle)
+        point_acquired = False
+        #for quitting during the game
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                done = True
+        #the snake movement
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_LEFT:
+                    x_change = (segment_width + segment_margin) * -1
+                    y_change = 0
+                if event.key == pygame.K_RIGHT:
+                    x_change = (segment_width + segment_margin)
+                    y_change = 0
+                if event.key == pygame.K_UP:
+                    x_change = 0
+                    y_change = (segment_height + segment_margin) * -1
+                if event.key == pygame.K_DOWN:
+                    x_change = 0
+                    y_change = (segment_height + segment_margin)
+        #acquiring a point
+        point_hit_list = pygame.sprite.spritecollide(segment, pointgroup, False)
+        if(point_hit_list): point_acquired=True
+
+        #"animation"
+        if not point_acquired:
+            old_segment = snake_segments.pop()
+            allspriteslist.remove(old_segment)
+
+        #adding another random point to the board, if one has been collected, 
+        else: 
+            pointgroup.remove(point)
+            point = Point(random.randrange(0, SCREEN_WIDTH,20),random.randrange(0, SCREEN_HEIGHT,20))
+            point_hit_list = pygame.sprite.spritecollide(point, obstacles, True)
+            if(point_hit_list):
+                while (point_hit_list):
+                    point = Point(random.randrange(0, SCREEN_WIDTH,20),random.randrange(0, SCREEN_HEIGHT,20))
+                    point_hit_list = pygame.sprite.spritecollide(point, obstacles, True)
+            pointgroup.add(point)
+
+        #screenwrap
+        x = snake_segments[0].rect.x + x_change
+        x=x%SCREEN_WIDTH
+        y = snake_segments[0].rect.y + y_change
+        y=y%SCREEN_HEIGHT
+        segment = Segment(x, y)
+
+        #collision and game over
+        blocks_hit_list = pygame.sprite.spritecollide(segment, allspriteslist, True)
+        blocks_hit_list1 =  pygame.sprite.spritecollide(segment, obstacles, True)
+        if(blocks_hit_list or blocks_hit_list1):
+             game_over()
             
 
         #drawing all elements on the screen
@@ -215,8 +233,8 @@ def all_of_it():
         screen.blit(font.render(str(len(snake_segments)), True, (255,255,255)), (SCREEN_WIDTH/2, 100))
         pygame.display.flip()
         #gamespeed
-        clock.tick(len(snake_segments))
+        clock.tick(len(snake_segments)*2)
         
 parse_command()
-all_of_it()
+game_loop()
 pygame.quit()
