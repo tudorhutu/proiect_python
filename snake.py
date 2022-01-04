@@ -58,9 +58,9 @@ def parse_command():
     global SCREEN_WIDTH,SCREEN_HEIGHT,game_matrix_rows,game_matrix_cols,obstacle_matrix
     # Instantiate the parser
     parser = argparse.ArgumentParser()
-    #parser.add_argument('file', type=argparse.FileType('r'))
+    parser.add_argument('--name', type=str, required=True)
     args = parser.parse_args()
-    with open('table.json') as f:
+    with open(args.name) as f:
         d = json.load(f)
         SCREEN_WIDTH =20* int(d['rows'])
         SCREEN_HEIGHT =20* int(d['cols'])
@@ -135,6 +135,15 @@ def game_over():
                 elif collide2:
                     color2 = (255, 0, 0)
                     if event.type == pygame.MOUSEBUTTONUP:
+                        #save list of scores in external file
+                        file = open("savefile.txt","r+")
+                        file.truncate(0)
+                        file.close()
+                        string_ints = [str(int) for int in list_of_scores]
+                        str_of_ints = ' '.join(string_ints)
+                        f = open("savefile.txt", "a")
+                        f.write(str_of_ints)
+                        f.close()
                         unclicked = False
                         done = True
                         exit()
@@ -171,9 +180,73 @@ def screen_wrap():
         segment = Segment(x, y)
         return segment
 
-def game_loop():
+def load_game():
+    global list_of_scores
+    f = open("savefile.txt", "r")
+    string_list = f.read()
+    for r in string_list:
+        if r>='0' and r<='9':
+            list_of_scores.append(int(r))
+
+
+def menu_screen():
     screen = pygame.display.set_mode([SCREEN_WIDTH, SCREEN_HEIGHT])
     pygame.display.set_caption('Snake')
+    screen.fill(BLACK)
+
+    #game over and contiune buttons
+    color1 = (255, 255, 255)
+    color2 = (255, 255, 255)
+    color3 = (255, 255, 255)
+    x_change = 0
+    y_change = 0
+    unclicked=True
+    rect1 = pygame.Rect(SCREEN_WIDTH/2-200, 50, 0, 0).inflate(300, 50)
+    rect2 = pygame.Rect(SCREEN_WIDTH/2+200, 50, 0, 0).inflate(300, 50)
+    rect3 = pygame.Rect(SCREEN_WIDTH/2,SCREEN_HEIGHT/2, 0, 0).inflate(300, 50)
+    while unclicked:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                unclicked = True
+            point = pygame.mouse.get_pos()
+            collide1 = rect1.collidepoint(point)
+            collide2 = rect2.collidepoint(point)
+            collide3 = rect3.collidepoint(point)
+            if collide1:
+                color1 = (0, 255, 0)
+                if event.type == pygame.MOUSEBUTTONUP:
+                    unclicked = False
+                    #max number of recursions is 1000
+                    game_loop()
+                    
+            elif collide2:
+                color2 = (0, 0, 255)
+                if event.type == pygame.MOUSEBUTTONUP:
+                    unclicked = False
+                    load_game()
+                    game_loop()
+
+            elif collide3:
+                color3 = (255, 0, 0)
+                if event.type == pygame.MOUSEBUTTONUP:
+                    unclicked = False
+                    done = True
+                    exit()
+
+            else:
+                color1 = (255, 255, 255)
+                color2 = (255, 255, 255)
+                color3 = (255, 255, 255)
+            pygame.draw.rect(screen, color1, rect1)
+            pygame.draw.rect(screen, color2, rect2)
+            pygame.draw.rect(screen, color3, rect3)
+            screen.blit(font.render('New Game', True, (0,0,0)), (SCREEN_WIDTH/2-250, 35))
+            screen.blit(font.render('Continue', True, (0,0,0)), (SCREEN_WIDTH/2+150, 35))
+            screen.blit(font.render('Quit', True, (0,0,0)), (SCREEN_WIDTH/2-30,SCREEN_HEIGHT/2-10))
+            pygame.display.flip()
+
+def game_loop():
+
     global allspriteslist,snake_segments,x_change,y_change,list_of_scores,pointgroup
     
     initialise_for_loop()
@@ -247,7 +320,7 @@ def game_loop():
         #gamespeed
         clock.tick(len(snake_segments)*2)
 
-if __name__=="__main__":      
+if __name__=="__main__":
     parse_command()
-    game_loop()
+    menu_screen()     
     pygame.quit()
